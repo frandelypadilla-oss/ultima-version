@@ -12,7 +12,7 @@ export default function HomePage() {
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWallpaper, setSelectedWallpaper] = useState<Wallpaper | null>(null);
-  const [darkMode, setDarkMode] = useState(true); // Estado para el tema
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     const fetchWallpapers = async () => {
@@ -38,7 +38,6 @@ export default function HomePage() {
     } catch (e) { alert("Error al descargar."); }
   };
 
-  // Colores dinámicos estilo iOS 26
   const theme = {
     bg: darkMode ? '#000' : '#F2F2F7',
     card: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)',
@@ -60,28 +59,34 @@ export default function HomePage() {
   return (
     <div style={{ background: theme.bg, minHeight: '100vh', display: 'flex', justifyContent: 'center', transition: 'background 0.5s ease' }}>
       
-      {/* HEADER FLOTANTE */}
-      <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, width: '90%', maxWidth: '400px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <header style={{ 
-          padding: '12px 24px', background: theme.header, backdropFilter: 'blur(30px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(30px) saturate(180%)', borderRadius: '24px', border: `0.5px solid ${theme.border}`,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1
+      {/* HEADER FLOTANTE - Solo se muestra si NO hay un wallpaper seleccionado */}
+      {!selectedWallpaper && (
+        <div style={{ 
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', 
+          zIndex: 1000, width: '90%', maxWidth: '400px', display: 'flex', 
+          justifyContent: 'space-between', alignItems: 'center',
+          animation: 'fadeIn 0.3s ease'
         }}>
-          <h1 style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '-1.2px', margin: 0, color: theme.text }}>iVibe</h1>
-          <div style={{ fontSize: '8px', fontWeight: '900', color: '#007AFF', letterSpacing: '1.5px', marginTop: '-2px' }}>PRO</div>
-        </header>
+          <header style={{ 
+            padding: '12px 24px', background: theme.header, backdropFilter: 'blur(30px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(30px) saturate(180%)', borderRadius: '24px', border: `0.5px solid ${theme.border}`,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1
+          }}>
+            <h1 style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '-1.2px', margin: 0, color: theme.text }}>iVibe</h1>
+            <div style={{ fontSize: '8px', fontWeight: '900', color: '#007AFF', letterSpacing: '1.5px', marginTop: '-2px' }}>PRO</div>
+          </header>
 
-        {/* BOTÓN MODO OSCURO / CLARO */}
-        <button 
-          onClick={() => setDarkMode(!darkMode)}
-          style={{
-            marginLeft: '10px', width: '48px', height: '48px', borderRadius: '24px', border: `0.5px solid ${theme.border}`,
-            background: theme.header, backdropFilter: 'blur(30px)', cursor: 'pointer', fontSize: '20px'
-          }}
-        >
-          {darkMode ? '☀️' : '🌙'}
-        </button>
-      </div>
+          <button 
+            onClick={() => setDarkMode(!darkMode)}
+            style={{
+              marginLeft: '10px', width: '48px', height: '48px', borderRadius: '24px', border: `0.5px solid ${theme.border}`,
+              background: theme.header, backdropFilter: 'blur(30px)', cursor: 'pointer', fontSize: '20px'
+            }}
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
+      )}
 
       <main style={{ width: '100%', maxWidth: '430px', position: 'relative', zIndex: 1 }}>
         <div style={{ height: '120px' }} />
@@ -111,13 +116,27 @@ export default function HomePage() {
             background: darkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.9)', 
             backdropFilter: 'blur(30px)', animation: 'fadeIn 0.3s ease'
           }}>
+            {/* Ahora este botón de cerrar tiene el espacio libre */}
             <button 
               onClick={() => setSelectedWallpaper(null)}
-              style={{ position: 'absolute', top: '40px', right: '30px', background: theme.header, border: 'none', color: theme.text, width: '45px', height: '45px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px' }}
+              style={{ 
+                position: 'absolute', top: '40px', right: '30px', 
+                background: theme.header, border: `0.5px solid ${theme.border}`, 
+                color: theme.text, width: '45px', height: '45px', 
+                borderRadius: '50%', cursor: 'pointer', fontSize: '18px',
+                zIndex: 2001
+              }}
             >✕</button>
 
             <div style={{ width: '85%', maxWidth: '360px', textAlign: 'center' }}>
-              <img src={selectedWallpaper.irl} style={{ width: '100%', borderRadius: '44px', boxShadow: '0 40px 80px rgba(0,0,0,0.3)', border: `0.5px solid ${theme.border}` }} />
+              <img 
+                src={selectedWallpaper.irl} 
+                style={{ 
+                  width: '100%', borderRadius: '44px', 
+                  boxShadow: darkMode ? '0 40px 100px rgba(0,0,0,0.8)' : '0 40px 100px rgba(0,0,0,0.2)', 
+                  border: `0.5px solid ${theme.border}` 
+                }} 
+              />
               <div style={{ marginTop: '30px' }}>
                 <h2 style={{ fontSize: '22px', fontWeight: '900', color: theme.text, marginBottom: '5px' }}>{selectedWallpaper.name}</h2>
                 <p style={{ fontSize: '12px', color: '#007AFF', fontWeight: '800', marginBottom: '25px' }}>iOS 26 GLASS EDITION</p>
@@ -138,7 +157,12 @@ export default function HomePage() {
 
         <style jsx global>{`
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-          body { background-color: ${theme.bg}; margin: 0; transition: background 0.5s ease; overflow: ${selectedWallpaper ? 'hidden' : 'auto'}; }
+          body { 
+            background-color: ${theme.bg}; 
+            margin: 0; 
+            transition: background 0.5s ease; 
+            overflow: ${selectedWallpaper ? 'hidden' : 'auto'}; 
+          }
         `}</style>
       </main>
     </div>
