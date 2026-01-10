@@ -145,50 +145,69 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* MODAL DE PREVIEW */}
-        {selectedWallpaper && (
-          <div className="modal-overlay" style={{
-            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-            zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: darkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.85)', backdropFilter: 'blur(40px)',
-            animation: 'fadeIn 0.4s ease'
-          }}>
-            <button 
-              onClick={() => setSelectedWallpaper(null)} 
-              style={{ 
-                position: 'absolute', top: '40px', right: '30px', 
-                background: theme.headerBg, border: `0.5px solid ${theme.border}`, color: theme.text, 
-                width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '20px', zIndex: 10,
-                boxShadow: theme.shadowOuter
-              }}
-            >✕</button>
+        {/* MODAL DE PREVIEW CORREGIDO */}
+{selectedWallpaper && (
+  <div style={{
+    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+    zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: darkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.9)', 
+    backdropFilter: 'blur(40px)', padding: '20px' // Padding para que no toque los bordes
+  }}>
+    
+    <button 
+      onClick={() => setSelectedWallpaper(null)} 
+      style={{ 
+        position: 'absolute', top: '40px', right: '30px', 
+        background: theme.headerBg, border: `0.5px solid ${theme.border}`, color: theme.text, 
+        width: '45px', height: '45px', borderRadius: '50%', cursor: 'pointer', zIndex: 2010
+      }}
+    >✕</button>
 
-            <div style={{ width: '88%', maxWidth: '400px', textAlign: 'center' }}>
-              <img src={selectedWallpaper.irl} className="preview-img" style={{ 
-                width: '100%', borderRadius: '50px', 
-                boxShadow: '0 60px 120px rgba(0,0,0,0.6)', 
-                border: `0.5px solid ${theme.border}`,
-                animation: 'zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-              }} />
-              <div style={{ marginTop: '35px', animation: 'slideUp 0.6s ease-out 0.2s backwards' }}>
-                <h2 style={{ fontSize: '28px', fontWeight: '900', color: theme.text, margin: 0 }}>{selectedWallpaper.name}</h2>
-                <div style={{ color: '#007AFF', fontWeight: '900', fontSize: '12px', letterSpacing: '2px', marginTop: '8px' }}>ULTRA HD</div>
-                
-                <button 
-                  onClick={() => handleApplyDownload(selectedWallpaper.irl, selectedWallpaper.name)}
-                  className="btn-apply-fancy"
-                  style={{
-                    background: darkMode ? 'linear-gradient(135deg, #4CAF50, #2E8B57)' : 'linear-gradient(135deg, #007AFF, #0056B3)',
-                    color: '#fff', boxShadow: '0 15px 30px rgba(0,122,255,0.4)',
-                    animation: 'bounceIn 0.8s ease-out'
-                  }}
-                >
-                  DOWNLOAD & SET
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+    {/* Contenedor flexible para evitar que el botón se pierda */}
+    <div style={{ 
+      width: '100%', maxWidth: '380px', maxHeight: '90vh', // Máximo 90% de la altura de la pantalla
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      overflowY: 'auto', // Si el contenido es MUY largo, permite scroll interno en vez de romperse
+      padding: '10px'
+    }}>
+      
+      <img src={selectedWallpaper.irl} style={{ 
+        width: '100%', borderRadius: '40px', 
+        boxShadow: '0 30px 60px rgba(0,0,0,0.5)', 
+        border: `0.5px solid ${theme.border}`,
+        flexShrink: 1, // Permite que la imagen se encoja si el texto es muy grande
+        maxHeight: '60vh', // La imagen no ocupará más del 60% de la pantalla
+        objectFit: 'cover'
+      }} />
+
+      <div style={{ 
+        marginTop: '20px', width: '100%', textAlign: 'center',
+        flexShrink: 0 // El texto y botón NO se encogen, siempre visibles
+      }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '900', color: theme.text, margin: '0' }}>
+          {selectedWallpaper.name}
+        </h2>
+        <div style={{ color: '#007AFF', fontWeight: '900', fontSize: '11px', letterSpacing: '2px', marginBottom: '20px' }}>
+          ULTRA HD ASSET
+        </div>
+        
+        <button 
+          onClick={() => handleApplyDownload(selectedWallpaper.irl, selectedWallpaper.name)}
+          className="btn-apply-fancy"
+          style={{
+            width: '100%', padding: '20px', borderRadius: '25px',
+            background: darkMode ? '#fff' : '#000',
+            color: darkMode ? '#000' : '#fff',
+            border: 'none', fontSize: '16px', fontWeight: '900',
+            cursor: 'pointer', boxShadow: '0 15px 30px rgba(0,0,0,0.2)'
+          }}
+        >
+          DOWNLOAD & APPLY
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         <style jsx global>{`
           body { 
