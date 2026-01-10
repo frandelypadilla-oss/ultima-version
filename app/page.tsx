@@ -6,7 +6,6 @@ interface Wallpaper {
   id: number;
   name: string;
   irl: string;
-  category?: string;
 }
 
 export default function HomePage() {
@@ -14,7 +13,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [selectedWallpaper, setSelectedWallpaper] = useState<Wallpaper | null>(null);
   const [darkMode, setDarkMode] = useState(true);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]); // Para el efecto Tilt
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const fetchWallpapers = async () => {
@@ -36,233 +35,167 @@ export default function HomePage() {
       link.download = `${name.toLowerCase()}.png`;
       link.click();
       window.URL.revokeObjectURL(blobUrl);
-      alert("¡Wallpaper guardado en tu galería! 🚀");
     } catch (e) { alert("Error al descargar."); }
   };
 
   const theme = {
-    bg: darkMode ? '#0e0e1a' : '#e0e5ec', // Fondos más profundos / cálidos
-    cardBg: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)',
-    text: darkMode ? '#fff' : '#333',
-    headerBg: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)',
-    border: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-    shadowInner: darkMode ? 'inset 5px 5px 10px rgba(0,0,0,0.4), inset -5px -5px 10px rgba(40,40,60,0.2)' : 'inset 5px 5px 10px rgba(163,177,198,0.6), inset -5px -5px 10px #ffffff',
-    shadowOuter: darkMode ? '10px 10px 20px rgba(0,0,0,0.5), -10px -10px 20px rgba(40,40,60,0.3)' : '10px 10px 20px rgba(163,177,198,0.6), -10px -10px 20px #ffffff',
-  };
-
-  // Efecto Tilt 3D
-  const handleTilt = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => {
-    const card = cardRefs.current[index];
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const rotateY = (x - rect.width / 2) / 20; // Más sensible
-    const rotateX = (y - rect.height / 2) / -20;
-    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
-    card.style.boxShadow = `${theme.shadowOuter}, ${rotateY / 2}px ${rotateX / 2}px 15px rgba(0,0,0,0.3)`;
-  };
-
-  const resetTilt = (index: number) => {
-    const card = cardRefs.current[index];
-    if (card) {
-      card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)`;
-      card.style.boxShadow = theme.shadowOuter;
-    }
+    bg: darkMode ? '#050505' : '#F2F2F7',
+    cardBg: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+    text: darkMode ? '#FFFFFF' : '#1C1C1E',
+    headerBg: darkMode ? 'rgba(15,15,15,0.7)' : 'rgba(255,255,255,0.7)',
+    border: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+    accent: '#007AFF'
   };
 
   if (loading) return (
     <div style={{background: theme.bg, height:'100vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
-      <div className="shimmer-logo" style={{color: theme.text}}>
-        <h1 style={{fontSize: '48px', fontWeight: '900', letterSpacing: '-2px', margin: 0}}>iVibe</h1>
-        <div style={{fontSize: '12px', fontWeight: '900', color: '#007AFF', letterSpacing: '3px', marginTop: '-5px'}}>PRO</div>
-      </div>
+      <div className="loader-vibe" style={{color: theme.text}}>iVibe PRO</div>
     </div>
   );
 
   return (
-    <div style={{ background: theme.bg, minHeight: '100vh', display: 'flex', justifyContent: 'center', transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+    <div style={{ background: theme.bg, minHeight: '100vh', transition: 'background 0.8s ease', overflowX: 'hidden' }}>
       
-      {/* HEADER FLOTANTE (Solo si no hay wallpaper seleccionado) */}
+      {/* HEADER FLOTANTE - Solo si no hay wallpaper seleccionado */}
       {!selectedWallpaper && (
-        <div style={{ 
-          position: 'fixed', top: '25px', left: '50%', transform: 'translateX(-50%)', 
-          zIndex: 1000, width: '92%', maxWidth: '420px', display: 'flex', gap: '10px'
-        }}>
-          <header style={{ 
-            padding: '10px 20px', background: theme.headerBg, backdropFilter: 'blur(35px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(35px) saturate(180%)', borderRadius: '30px', border: `0.5px solid ${theme.border}`,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1,
-            boxShadow: theme.shadowOuter, transition: 'all 0.3s ease',
-            animation: 'slideInDown 0.6s ease-out'
-          }}>
-            <div style={{textAlign: 'left'}}>
-              <h1 style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '-1px', margin: 0, color: theme.text }}>iVibe</h1>
-              <span style={{ fontSize: '9px', color: '#007AFF', fontWeight: 'bold' }}>{wallpapers.length} ARTWORKS</span>
+        <div className="header-wrapper">
+          <header className="glass-header" style={{ background: theme.headerBg, border: `0.5px solid ${theme.border}` }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.8px', margin: 0, color: theme.text }}>iVibe</h1>
+              <span style={{ fontSize: '9px', color: theme.accent, fontWeight: '800', letterSpacing: '1px' }}>{wallpapers.length} ARTWORKS</span>
             </div>
-            <button 
-              onClick={() => setDarkMode(!darkMode)}
-              style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: theme.text }}
-            >
-              {darkMode ? '☀️' : '🌙'}
+            <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)} style={{ color: theme.text }}>
+              {darkMode ? '☼' : '☾'}
             </button>
           </header>
         </div>
       )}
 
-      <main style={{ width: '100%', maxWidth: '450px', padding: '0 18px' }}>
-        <div style={{ height: '130px' }} /> {/* Espacio para el header */}
-
-        {/* GRID con animaciones y Tilt */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', paddingBottom: '100px' }}>
+      <main style={{ maxWidth: '450px', margin: '0 auto', padding: '120px 16px 40px' }}>
+        
+        {/* GRID DE WALLPAPERS */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           {wallpapers.map((wp, index) => (
             <div 
               key={wp.id} 
               onClick={() => setSelectedWallpaper(wp)}
-              ref={el => cardRefs.current[index] = el}
-              onMouseMove={(e) => handleTilt(e, index)}
-              onMouseLeave={() => resetTilt(index)}
-              className="wallpaper-card"
+              className="card-item"
               style={{ 
-                position: 'relative', borderRadius: '40px', overflow: 'hidden', height: '360px', 
-                background: theme.cardBg, border: `0.5px solid ${theme.border}`, cursor: 'pointer',
-                boxShadow: theme.shadowOuter, transition: 'all 0.3s ease',
-                animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards` // Animación escalonada
+                background: theme.cardBg, 
+                border: `0.5px solid ${theme.border}`,
+                animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`
               }}
             >
-              <img src={wp.irl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <div style={{
-                position: 'absolute', bottom: '20px', left: '20px', padding: '8px 16px',
-                background: darkMode ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.6)', 
-                backdropFilter: 'blur(15px)', borderRadius: '20px',
-                color: '#fff', fontSize: '11px', fontWeight: 'bold', 
-                border: darkMode ? '0.5px solid rgba(255,255,255,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
-                textShadow: '0 1px 2px rgba(0,0,0,0.4)'
-              }}>
-                {wp.name}
-              </div>
+              <img src={wp.irl} loading="lazy" />
+              <div className="card-info-badge">{wp.name}</div>
             </div>
           ))}
         </div>
 
-        {/* MODAL DE PREVIEW CORREGIDO */}
-{selectedWallpaper && (
-  <div style={{
-    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-    zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: darkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.9)', 
-    backdropFilter: 'blur(40px)', padding: '20px' // Padding para que no toque los bordes
-  }}>
-    
-    <button 
-      onClick={() => setSelectedWallpaper(null)} 
-      style={{ 
-        position: 'absolute', top: '40px', right: '30px', 
-        background: theme.headerBg, border: `0.5px solid ${theme.border}`, color: theme.text, 
-        width: '45px', height: '45px', borderRadius: '50%', cursor: 'pointer', zIndex: 2010
-      }}
-    >✕</button>
-
-    {/* Contenedor flexible para evitar que el botón se pierda */}
-    <div style={{ 
-      width: '100%', maxWidth: '380px', maxHeight: '90vh', // Máximo 90% de la altura de la pantalla
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      overflowY: 'auto', // Si el contenido es MUY largo, permite scroll interno en vez de romperse
-      padding: '10px'
-    }}>
-      
-      <img src={selectedWallpaper.irl} style={{ 
-        width: '100%', borderRadius: '40px', 
-        boxShadow: '0 30px 60px rgba(0,0,0,0.5)', 
-        border: `0.5px solid ${theme.border}`,
-        flexShrink: 1, // Permite que la imagen se encoja si el texto es muy grande
-        maxHeight: '60vh', // La imagen no ocupará más del 60% de la pantalla
-        objectFit: 'cover'
-      }} />
-
-      <div style={{ 
-        marginTop: '20px', width: '100%', textAlign: 'center',
-        flexShrink: 0 // El texto y botón NO se encogen, siempre visibles
-      }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '900', color: theme.text, margin: '0' }}>
-          {selectedWallpaper.name}
-        </h2>
-        <div style={{ color: '#007AFF', fontWeight: '900', fontSize: '11px', letterSpacing: '2px', marginBottom: '20px' }}>
-          ULTRA HD ASSET
-        </div>
-        
-        <button 
-          onClick={() => handleApplyDownload(selectedWallpaper.irl, selectedWallpaper.name)}
-          className="btn-apply-fancy"
-          style={{
-            width: '100%', padding: '20px', borderRadius: '25px',
-            background: darkMode ? '#fff' : '#000',
-            color: darkMode ? '#000' : '#fff',
-            border: 'none', fontSize: '16px', fontWeight: '900',
-            cursor: 'pointer', boxShadow: '0 15px 30px rgba(0,0,0,0.2)'
-          }}
-        >
-          DOWNLOAD & APPLY
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        {/* MODAL SYSTEM (BOTTOM SHEET STYLE) */}
+        {selectedWallpaper && (
+          <div className="modal-root">
+            <div className="modal-backdrop" onClick={() => setSelectedWallpaper(null)} />
+            
+            <div className="modal-sheet" style={{ 
+              background: darkMode ? '#121212' : '#FFFFFF',
+              borderTop: `0.5px solid ${theme.border}`
+            }}>
+              <div className="pull-bar" onClick={() => setSelectedWallpaper(null)}><div className="bar" /></div>
+              
+              <div className="modal-inner-content">
+                <div className="image-container">
+                  <img src={selectedWallpaper.irl} className="preview-img" />
+                </div>
+                
+                <div className="text-container">
+                  <h2 style={{ color: theme.text, fontSize: '26px', fontWeight: '900', margin: '0' }}>{selectedWallpaper.name}</h2>
+                  <p style={{ color: theme.accent, fontSize: '12px', fontWeight: '800', letterSpacing: '1px', marginTop: '5px' }}>8K RESOLUTION • PRO ASSET</p>
+                  
+                  <button 
+                    onClick={() => handleApplyDownload(selectedWallpaper.irl, selectedWallpaper.name)}
+                    className="download-btn"
+                    style={{ background: theme.text, color: theme.bg }}
+                  >
+                    DOWNLOAD WALLPAPER
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <style jsx global>{`
-          body { 
-            background-color: ${theme.bg}; 
-            margin: 0; 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent; /* Evita el resalte azul en móviles */
+          body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+
+          .header-wrapper {
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+            display: flex; justify-content: center; padding-top: 25px;
+            animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
-          .wallpaper-card {
-            transform-style: preserve-3d;
-            will-change: transform, box-shadow;
-          }
-          .wallpaper-card:hover {
-            box-shadow: ${theme.shadowOuter}, 0 0 30px rgba(0,122,255,0.3); /* Brillo al pasar el ratón */
-          }
-          .wallpaper-card:active {
-            transform: perspective(1000px) scale(0.98);
-            transition: transform 0.2s ease-out;
+          .glass-header {
+            width: 88%; max-width: 400px; padding: 12px 24px;
+            border-radius: 30px; backdrop-filter: blur(25px) saturate(180%);
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
           }
 
-          .btn-apply-fancy {
-            width: 100%; margin-top: 40px; padding: 25px; borderRadius: 30px;
-            border: none; fontSize: '18px'; fontWeight: '900'; cursor: pointer;
-            position: relative; overflow: hidden;
-            transition: all 0.3s ease;
-          }
-          .btn-apply-fancy:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 40px rgba(0,122,255,0.6);
-          }
-          .btn-apply-fancy:active {
-            transform: translateY(0px) scale(0.98);
+          .theme-toggle {
+            background: rgba(120,120,120,0.1); border: none; width: 42px; height: 42px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;
           }
 
-          /* Animaciones */
+          .card-item {
+            position: relative; height: 340px; border-radius: 38px; overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer;
+          }
+
+          .card-item:active { transform: scale(0.95); filter: brightness(0.9); }
+          .card-item img { width: 100%; height: 100%; object-fit: cover; }
+
+          .card-info-badge {
+            position: absolute; bottom: 15px; left: 15px; right: 15px;
+            padding: 10px; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
+            border-radius: 20px; color: white; font-size: 11px; font-weight: 700;
+            text-align: center; border: 0.5px solid rgba(255,255,255,0.2);
+          }
+
+          /* MODAL SHEET CSS */
+          .modal-root { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: flex-end; justify-content: center; }
+          .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(15px); animation: fadeIn 0.4s ease; }
+          
+          .modal-sheet {
+            position: relative; width: 100%; max-width: 430px; height: 82vh;
+            border-radius: 40px 40px 0 0; display: flex; flex-direction: column;
+            animation: sheetUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+          }
+
+          .pull-bar { width: 100%; padding: 16px; display: flex; justify-content: center; cursor: pointer; }
+          .bar { width: 40px; height: 5px; background: rgba(120,120,120,0.3); border-radius: 10px; }
+
+          .modal-inner-content { overflow-y: auto; padding: 0 24px 40px; display: flex; flex-direction: column; align-items: center; }
+          
+          .image-container { width: 100%; aspect-ratio: 9/16; max-height: 50vh; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+          .preview-img { width: 100%; height: 100%; object-fit: cover; }
+
+          .text-container { width: 100%; text-align: center; padding-top: 30px; }
+
+          .download-btn {
+            width: 100%; padding: 22px; border-radius: 24px; border: none;
+            font-size: 16px; font-weight: 900; margin-top: 25px; cursor: pointer;
+            transition: transform 0.2s ease;
+          }
+          .download-btn:active { transform: scale(0.97); }
+
+          /* ANIMATIONS */
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-          @keyframes slideInDown { from { opacity: 0; transform: translateY(-50px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
+          @keyframes slideDown { from { transform: translateY(-100px) translateX(-50%); opacity: 0; } to { transform: translateY(0) translateX(-50%); opacity: 1; } }
+          @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
           @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes zoomIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-          @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-          }
-          @keyframes shimmer-logo {
-            0% { opacity: 0.2; transform: translateY(0); }
-            50% { opacity: 1; transform: translateY(-10px); }
-            100% { opacity: 0.2; transform: translateY(0); }
-          }
-          .shimmer-logo { animation: shimmer-logo 2.5s infinite ease-in-out; }
+          .loader-vibe { font-size: 28px; font-weight: 900; letter-spacing: -1.5px; animation: pulse 2s infinite ease-in-out; }
+          @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
         `}</style>
       </main>
     </div>
