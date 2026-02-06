@@ -9,6 +9,21 @@ export default function IVibeProSpatial() {
   const [selected, setSelected] = useState<any | null>(null);
   const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null);
   const [botMood, setBotMood] = useState('happy');
+  const [botMessage, setBotMessage] = useState("¡Desliza para brillar! ✨");
+
+  // EL CEREBRO DEL ROBOT
+  const sabiduria = [
+    "La tecnología es un siervo útil, pero un amo peligroso. Úsala con propósito. 🤖",
+    "Tu wallpaper dice mucho de tu estado mental. Elige paz. ✨",
+    "El modo oscuro no es solo estética, es salud para tus ojos y tu batería. 🔋",
+    "¿Ya tomaste agua hoy? Tu cerebro procesa mejor los píxeles hidratado. 💧",
+    "No busques la felicidad en el scroll infinito, búscala en lo que creas. 🎨",
+    "La vida es como el código: si algo no funciona, refactoriza tu actitud. 🚀",
+    "Un setup minimalista es un atajo a una mente enfocada. 🧘‍♂️",
+    "El fracaso es solo un bug que te enseña a programar mejor tu destino. 🛠️",
+    "Menos notificaciones, más conversaciones reales. Equilibrio digital. ⚖️",
+    "Sé como una pantalla OLED: brilla por ti mismo y no gastes energía en lo oscuro. 💎"
+  ];
 
   useEffect(() => {
     const fetchWps = async () => {
@@ -22,6 +37,11 @@ export default function IVibeProSpatial() {
   const handleSwipe = (direction: 'left' | 'right') => {
     setSwipeDir(direction);
     setBotMood(direction === 'right' ? 'excited' : 'thinking');
+    
+    // Cambia a un mensaje inteligente aleatorio al deslizar
+    const nuevoMensaje = sabiduria[Math.floor(Math.random() * sabiduria.length)];
+    setBotMessage(nuevoMensaje);
+
     setTimeout(() => {
       setSwipeDir(null);
       setCurrentIndex((prev) => (prev + 1) % wallpapers.length);
@@ -40,7 +60,7 @@ export default function IVibeProSpatial() {
 
       {/* ROBOT PROTAGONISTA REDISEÑADO */}
       <header className="spatial-header">
-        <div className={`vibebot-core ${botMood}`}>
+        <div className={`vibebot-core ${botMood}`} onClick={() => setBotMessage(sabiduria[Math.floor(Math.random() * sabiduria.length)])}>
           <div className="bot-body">
             <div className="bot-eyes">
               <div className="eye left"></div>
@@ -51,9 +71,7 @@ export default function IVibeProSpatial() {
           <div className="bot-ring"></div>
           <div className="bot-shadow"></div>
           <div className="speech-bubble-premium">
-            {botMood === 'happy' && "¡Desliza para brillar! ✨"}
-            {botMood === 'excited' && "¡Uff, ese está durísimo! 🔥"}
-            {botMood === 'thinking' && "Buscando algo mejor... 🤔"}
+            {botMessage}
           </div>
         </div>
       </header>
@@ -142,11 +160,13 @@ export default function IVibeProSpatial() {
         }
 
         .speech-bubble-premium {
-          position: absolute; left: 100px; top: 10px; width: 150px;
-          background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-          padding: 10px 15px; border-radius: 20px 20px 20px 0;
+          position: absolute; left: 100px; top: -10px; width: 180px;
+          background: rgba(255,255,255,0.1); backdrop-filter: blur(20px);
+          padding: 12px 18px; border-radius: 25px 25px 25px 0;
           font-size: 11px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2);
           animation: fadeIn 0.5s ease;
+          color: #50e3c2; line-height: 1.4;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         /* CARD STACK */
@@ -186,6 +206,7 @@ export default function IVibeProSpatial() {
         .sheet-preview img { width: 100%; height: 100%; object-fit: cover; }
         .download-premium { width: 100%; padding: 20px; border-radius: 20px; border: none; background: #007AFF; color: white; font-weight: 800; margin-top: 20px; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .loading-state { height: 100vh; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 2rem; color: #007AFF; }
       `}</style>
     </div>
   );
