@@ -2,23 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 
-export default function IVibeProBotEdition() {
+export default function IVibeProSpatial() {
   const [wallpapers, setWallpapers] = useState<any[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState('Home');
-  const [botMessage, setBotMessage] = useState('¡Dime qué buscamos hoy, jefe!');
-  const [isBotDancing, setIsBotDancing] = useState(false);
-
-  const frases = [
-    "¡Ese wallpaper está más duro que un cuarto de pollo!",
-    "Buscando... espero que tengas buen gusto. 👀",
-    "¡Klpk! ¿Le damos un refresh al cel?",
-    "Si fuera humano, me bajaría ese mismo.",
-    "¿Buscando algo premium? Estás en el lugar indicado.",
-    "Cuidado, que ese fondo brilla más que el sol de mediodía."
-  ];
+  const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null);
+  const [botMood, setBotMood] = useState('happy');
 
   useEffect(() => {
     const fetchWps = async () => {
@@ -29,155 +19,172 @@ export default function IVibeProBotEdition() {
     fetchWps();
   }, []);
 
-  const handleSearch = (e: any) => {
-    setSearchTerm(e.target.value);
-    if (e.target.value.length > 2) {
-      setBotMessage("¡Uff, buena elección!");
-      setIsBotDancing(true);
-      setTimeout(() => setIsBotDancing(false), 500);
-    }
+  const handleSwipe = (direction: 'left' | 'right') => {
+    setSwipeDir(direction);
+    setBotMood(direction === 'right' ? 'excited' : 'thinking');
+    setTimeout(() => {
+      setSwipeDir(null);
+      setCurrentIndex((prev) => (prev + 1) % wallpapers.length);
+      setBotMood('happy');
+    }, 400);
   };
 
-  const interactBot = () => {
-    const random = frases[Math.floor(Math.random() * frases.length)];
-    setBotMessage(random);
-    setIsBotDancing(true);
-    setTimeout(() => setIsBotDancing(false), 600);
-  };
+  if (loading) return <div className="loading-state">iVibe PRO</div>;
 
-  if (loading) return <div className="loader">iVibe PRO</div>;
+  const currentWp = wallpapers[currentIndex];
+  const nextWp = wallpapers[(currentIndex + 1) % wallpapers.length];
 
   return (
-    <div className="main-viewport">
-      
-      {/* SECCIÓN DEL ROBOT DIVERTIDO */}
-      <div className="bot-section" onClick={interactBot}>
-        <div className={`robot-container ${isBotDancing ? 'dance' : ''}`}>
-          <div className="speech-bubble">{botMessage}</div>
-          <svg width="60" height="60" viewBox="0 0 100 100">
-             <circle cx="50" cy="50" r="45" fill="rgba(255,255,255,0.1)" stroke="white" strokeWidth="0.5" />
-             <rect x="30" y="40" width="40" height="20" rx="10" fill="#121212" />
-             <circle cx="40" cy="50" r="4" fill="#00F0FF"><animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite"/></circle>
-             <circle cx="60" cy="50" r="4" fill="#00F0FF"><animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite"/></circle>
-             <path d="M45 70 Q50 75 55 70" stroke="#00F0FF" fill="none" strokeWidth="2" />
-          </svg>
-        </div>
-      </div>
+    <div className="spatial-container">
+      <div className="aurora-mesh" />
 
-      <header className="premium-header">
-        <div className="search-bar-wrapper">
-           <input type="text" placeholder="Busca tu estilo..." value={searchTerm} onChange={handleSearch} />
-           <span className="search-icon">🔍</span>
-        </div>
-        
-        <div className="section-label">Recomendados 🔥</div>
-        <div className="recommended-slider">
-          {wallpapers.slice(0, 4).map((wp) => (
-            <div key={`rec-${wp.id}`} className="rec-card" onClick={() => setSelected(wp)}>
-              <img src={wp.irl} alt="" />
-              <div className="rec-overlay"><span>{wp.name}</span></div>
+      {/* ROBOT PROTAGONISTA REDISEÑADO */}
+      <header className="spatial-header">
+        <div className={`vibebot-core ${botMood}`}>
+          <div className="bot-body">
+            <div className="bot-eyes">
+              <div className="eye left"></div>
+              <div className="eye right"></div>
             </div>
-          ))}
+            <div className="bot-mouth"></div>
+          </div>
+          <div className="bot-ring"></div>
+          <div className="bot-shadow"></div>
+          <div className="speech-bubble-premium">
+            {botMood === 'happy' && "¡Desliza para brillar! ✨"}
+            {botMood === 'excited' && "¡Uff, ese está durísimo! 🔥"}
+            {botMood === 'thinking' && "Buscando algo mejor... 🤔"}
+          </div>
         </div>
       </header>
 
-      <main className="wallpaper-grid">
-        {wallpapers.filter(w => w.name.toLowerCase().includes(searchTerm.toLowerCase())).map((wp, i) => (
-          <div key={wp.id} className="wp-item" onClick={() => setSelected(wp)} style={{ animationDelay: `${i * 0.05}s` }}>
-            <div className="image-container">
-              <img src={wp.irl} alt={wp.name} />
+      {/* STACK DE TARJETAS */}
+      <main className="swipe-arena">
+        <div className="card-stack-wrapper">
+          {nextWp && (
+            <div className="glass-card next-card">
+              <img src={nextWp.irl} alt="" />
             </div>
-            <div className="wp-details">
-              <h4>{wp.name}</h4>
-              <p>OLED Optimized • 8K</p>
+          )}
+          {currentWp && (
+            <div className={`glass-card main-card ${swipeDir}`}>
+              <div className="liquid-reflection" />
+              <img src={currentWp.irl} alt={currentWp.name} />
+              <div className="card-content">
+                <div className="content-blur">
+                  <h2>{currentWp.name}</h2>
+                  <div className="specs">
+                    <span>8K RES</span><span className="dot">•</span><span>PREMIUM</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          )}
+        </div>
       </main>
 
-      {/* BANNER QUE SUBE (EL DE TU FOTO) */}
+      {/* BOTONES */}
+      <footer className="spatial-actions">
+        <button className="action-btn btn-no" onClick={() => handleSwipe('left')}>✕</button>
+        <button className="action-btn btn-info" onClick={() => setSelected(currentWp)}>i</button>
+        <button className="action-btn btn-yes" onClick={() => handleSwipe('right')}>♥</button>
+      </footer>
+
+      {/* MODAL DETALLE */}
       {selected && (
-        <div className="modal-root">
-          <div className="overlay-blur" onClick={() => setSelected(null)} />
-          <div className="premium-banner">
-            <div className="drag-handle" />
-            <div className="banner-image"><img src={selected.irl} alt="" /></div>
-            <div className="banner-info">
-              <h2>{selected.name}</h2>
-              <div className="tags"><span className="tag-pill">PREMIUM ASSET</span></div>
-              <button className="download-cta" onClick={() => window.open(selected.irl)}>DOWNLOAD NOW</button>
+        <div className="spatial-modal">
+          <div className="modal-backdrop" onClick={() => setSelected(null)} />
+          <div className="liquid-sheet">
+            <div className="sheet-preview">
+              <img src={selected.irl} alt="" />
+            </div>
+            <div className="sheet-body">
+              <h1>{selected.name}</h1>
+              <button className="download-premium" onClick={() => window.open(selected.irl)}>
+                DOWNLOAD ASSET
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* DOCK INFERIOR INTERACTIVO */}
-      <footer className="floating-dock">
-        {['Home', 'Setup', 'Favorite', 'Mockup'].map((tab) => (
-          <div key={tab} className={`dock-item ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-            <span className="label">{tab}</span>
-          </div>
-        ))}
-      </footer>
-
       <style jsx global>{`
-        body { margin: 0; background: #000; font-family: 'Plus Jakarta Sans', sans-serif; color: white; overflow-x: hidden; }
-        .main-viewport { padding-top: 20px; }
+        body { margin: 0; background: #020205; font-family: 'Plus Jakarta Sans', sans-serif; color: white; overflow: hidden; }
+        .spatial-container { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .aurora-mesh { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 50% 50%, #1a1a40 0%, #000 100%); filter: blur(60px); }
+
+        /* VIBEBOT 3.0 EVOLVED */
+        .spatial-header { padding: 40px 0; display: flex; justify-content: center; position: relative; }
+        .vibebot-core { position: relative; width: 80px; height: 80px; cursor: pointer; }
         
-        /* ROBOT STYLES */
-        .bot-section { display: flex; justify-content: center; margin-bottom: 10px; cursor: pointer; }
-        .robot-container { position: relative; display: flex; flex-direction: column; align-items: center; }
-        .speech-bubble { 
-          background: white; color: black; padding: 8px 15px; border-radius: 15px; 
-          font-size: 11px; font-weight: 800; margin-bottom: 10px; position: relative;
-          box-shadow: 0 5px 15px rgba(255,255,255,0.2);
-          animation: bounce 2s infinite;
+        .bot-body {
+          width: 100%; height: 100%; background: linear-gradient(135deg, #fff 0%, #d1d1d1 100%);
+          border-radius: 50%; position: relative; z-index: 10;
+          box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2), 0 0 30px rgba(0, 240, 255, 0.4);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          animation: float 3s ease-in-out infinite;
         }
-        .speech-bubble::after { 
-          content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
-          border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid white;
+
+        .bot-eyes { display: flex; gap: 12px; margin-bottom: 5px; }
+        .eye { 
+          width: 10px; height: 10px; background: #121212; border-radius: 50%; 
+          animation: blink 4s infinite; transition: 0.3s;
         }
-        .dance { animation: dance 0.5s ease; }
-        @keyframes dance { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1) rotate(10deg); } }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-        /* HEADER & GRID */
-        .premium-header { padding: 0 20px; }
-        .search-bar-wrapper { background: #111; border-radius: 20px; padding: 12px 20px; display: flex; align-items: center; border: 1px solid #222; }
-        .search-bar-wrapper input { background: transparent; border: none; color: white; flex: 1; outline: none; }
-        
-        .recommended-slider { display: flex; gap: 15px; overflow-x: auto; scrollbar-width: none; padding: 10px 0; }
-        .rec-card { min-width: 120px; height: 160px; border-radius: 20px; overflow: hidden; position: relative; border: 1px solid #222; }
-        .rec-card img { width: 100%; height: 100%; object-fit: cover; }
-        .rec-overlay { position: absolute; bottom: 0; width: 100%; background: linear-gradient(transparent, black); padding: 10px; font-size: 10px; font-weight: 800; }
+        /* ESTADOS DEL BOT */
+        .excited .eye { height: 12px; background: #007AFF; box-shadow: 0 0 10px #007AFF; }
+        .thinking .eye { width: 12px; height: 3px; border-radius: 2px; }
 
-        .wallpaper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; padding-bottom: 120px; }
-        .image-container { height: 260px; border-radius: 25px; overflow: hidden; border: 1px solid #222; }
-        .image-container img { width: 100%; height: 100%; object-fit: cover; }
-        .wp-details h4 { margin: 8px 0 0; font-size: 13px; }
-        .wp-details p { margin: 2px 0 0; font-size: 9px; opacity: 0.5; }
-
-        /* MODAL (FOTO 2) */
-        .modal-root { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: flex-end; }
-        .overlay-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); }
-        .premium-banner { 
-          width: 100%; background: #0c0c0c; border-radius: 40px 40px 0 0; padding: 20px; 
-          animation: slideUp 0.6s cubic-bezier(0.2, 1, 0.3, 1); border-top: 1px solid #333;
+        .bot-ring {
+          position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
+          border: 2px solid rgba(0, 240, 255, 0.3); border-radius: 50%;
+          animation: spin 10s linear infinite;
         }
-        .banner-image { width: 100%; height: 380px; border-radius: 30px; overflow: hidden; }
-        .banner-image img { width: 100%; height: 100%; object-fit: cover; }
-        .download-cta { width: 100%; padding: 20px; border-radius: 20px; border: none; background: #007AFF; color: white; font-weight: 800; margin-top: 20px; cursor: pointer; }
 
-        /* DOCK */
-        .floating-dock { 
-          position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 90%; 
-          background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border-radius: 30px; 
-          padding: 15px; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.1);
+        .speech-bubble-premium {
+          position: absolute; left: 100px; top: 10px; width: 150px;
+          background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+          padding: 10px 15px; border-radius: 20px 20px 20px 0;
+          font-size: 11px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2);
+          animation: fadeIn 0.5s ease;
         }
-        .dock-item { opacity: 0.5; transition: 0.3s; cursor: pointer; }
-        .dock-item.active { opacity: 1; color: #50E3C2; }
-        .label { font-size: 10px; font-weight: 800; }
 
+        /* CARD STACK */
+        .swipe-arena { flex: 1; display: flex; align-items: center; justify-content: center; }
+        .card-stack-wrapper { position: relative; width: 85%; max-width: 340px; height: 480px; }
+        .glass-card { position: absolute; inset: 0; border-radius: 40px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); transition: 0.5s cubic-bezier(0.2, 1, 0.3, 1); }
+        .main-card { z-index: 2; box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+        .next-card { z-index: 1; transform: scale(0.9) translateY(20px); opacity: 0.4; }
+        .glass-card img { width: 100%; height: 100%; object-fit: cover; }
+        .card-content { position: absolute; bottom: 0; width: 100%; padding: 20px; }
+        .content-blur { background: rgba(0,0,0,0.4); backdrop-filter: blur(20px); padding: 15px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* ANIMACIONES SWIPE */
+        .right { transform: translateX(200%) rotate(30deg); }
+        .left { transform: translateX(-200%) rotate(-30deg); }
+
+        /* ACTIONS */
+        .spatial-actions { padding: 40px; display: flex; justify-content: center; gap: 20px; }
+        .action-btn { 
+          width: 65px; height: 65px; border-radius: 50%; border: none; 
+          background: rgba(255,255,255,0.05); color: white; font-size: 1.5rem; 
+          backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s;
+        }
+        .btn-yes:active { background: #50e3c2; }
+        .btn-no:active { background: #ff4b4b; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* MODAL */
+        .spatial-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-end; }
+        .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); }
+        .liquid-sheet { width: 100%; background: #08080a; border-radius: 40px 40px 0 0; padding: 20px; position: relative; z-index: 2; border-top: 1px solid rgba(255,255,255,0.1); animation: slideUp 0.5s ease; }
+        .sheet-preview { width: 100%; height: 350px; border-radius: 30px; overflow: hidden; }
+        .sheet-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .download-premium { width: 100%; padding: 20px; border-radius: 20px; border: none; background: #007AFF; color: white; font-weight: 800; margin-top: 20px; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       `}</style>
     </div>
