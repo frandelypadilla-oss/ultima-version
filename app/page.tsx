@@ -1,15 +1,28 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 
-export default function IVibeProOptimized() {
+export default function IVibeProPremium() {
   const [wallpapers, setWallpapers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('Trending');
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('Home');
-  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<number[]>([]);
+
+  // Configuración de navegación
+  const categories = ['Trending', 'Anime', 'Minimal', 'Premium'];
+  const dockItems = [
+    { icon: '🏠', label: 'Home' },
+    { icon: '📋', label: 'Setup' },
+    { icon: '❤️', label: 'Favorite' },
+    { icon: '📱', label: 'Mockup' }
+  ];
+
+  // Índices para las gotas de cristal
+  const activeDockIndex = dockItems.findIndex(item => item.label === activeTab);
+  const activeCategoryIndex = categories.indexOf(category);
 
   useEffect(() => {
     const fetchWps = async () => {
@@ -18,23 +31,20 @@ export default function IVibeProOptimized() {
       setLoading(false);
     };
     fetchWps();
+    const savedFavs = localStorage.getItem('ivibe_favs');
+    if (savedFavs) setFavorites(JSON.parse(savedFavs));
   }, []);
 
-  // FUNCIÓN PARA NAVEGAR FLUIDAMENTE A UN WP ALEATORIO
-  const scrollToRandom = () => {
-    if (filtered.length > 0) {
-      const randomIndex = Math.floor(Math.random() * filtered.length);
-      const randomWp = filtered[randomIndex];
-      
-      // Buscamos el elemento en el DOM
-      const element = document.getElementById(`wp-${randomWp.id}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setHighlightedId(randomWp.id);
-        // Quitamos el brillo después de 1.5 segundos
-        setTimeout(() => setHighlightedId(null), 1500);
-      }
+  const toggleFavorite = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    let newFavs = [...favorites];
+    if (newFavs.includes(id)) {
+      newFavs = newFavs.filter(favId => favId !== id);
+    } else {
+      newFavs.push(id);
     }
+    setFavorites(newFavs);
+    localStorage.setItem('ivibe_favs', JSON.stringify(newFavs));
   };
 
   const download = async (url: string, name: string) => {
@@ -46,24 +56,36 @@ export default function IVibeProOptimized() {
     link.click();
   };
 
-  const filtered = wallpapers.filter(wp => 
-    wp.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (category === 'Trending' || wp.category === category)
-  );
+  const getFilteredData = () => {
+    let base = wallpapers;
+    if (activeTab === 'Favorite') {
+      base = wallpapers.filter(wp => favorites.includes(wp.id));
+    } else if (activeTab === 'Setup') {
+      base = wallpapers.filter(wp => wp.category === 'Setup');
+    } else if (activeTab === 'Mockup') {
+      base = wallpapers.filter(wp => wp.category === 'Mockup');
+    } else {
+      if (category !== 'Trending') {
+        base = wallpapers.filter(wp => wp.category === category);
+      }
+    }
+    return base.filter(wp => wp.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  };
 
-  const recommended = wallpapers.slice(0, 4);
+  const filtered = getFilteredData();
+  const recommended = wallpapers.slice(0, 5);
 
   if (loading) return <div className="loader">iVibe PRO</div>;
 
   return (
     <div className="main-viewport">
       <header className="premium-header">
-        <div className="top-nav">
-          <div className="user-pill"><div className="avatar" /></div>
-          <div className="search-bar-wrapper">
+        <div className="top-nav glass">
+          <div className="avatar" />
+          <div className="search-bar">
              <input 
                type="text" 
-               placeholder="Search wallpapers..." 
+               placeholder="Search inspiration..." 
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
              />
@@ -71,87 +93,74 @@ export default function IVibeProOptimized() {
           </div>
         </div>
 
-        <div className="section-label">Recommended for you</div>
-        <div className="recommended-slider">
-          {recommended.map((wp, i) => (
-            <div key={`rec-${wp.id}`} className="rec-card" onClick={() => setSelected(wp)}>
-              <img src={wp.irl} alt="" fetchPriority={i < 2 ? "high" : "auto"} />
-              <div className="rec-overlay">
-                <span>{wp.name}</span>
-                <p>Ultra HD</p>
-              </div>
+        {activeTab === 'Home' && (
+          <>
+            <div className="section-label">Featured Art</div>
+            <div className="recommended-slider">
+              {recommended.map((wp) => (
+                <div key={`rec-${wp.id}`} className="rec-card glass" onClick={() => setSelected(wp)}>
+                  <img src={wp.irl} alt="" />
+                  <div className="rec-overlay">
+                    <span>{wp.name}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <nav className="category-nav">
-          {['Trending', 'ForYou', 'Premium'].map(cat => (
-            <button 
-              key={cat} 
-              className={category === cat ? 'active' : ''} 
-              onClick={() => setCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </nav>
+            {/* CATEGORÍAS CON GOTA DE CRISTAL */}
+            <nav className="category-nav glass">
+              <div 
+                className="category-drop" 
+                style={{ transform: `translateX(calc(${activeCategoryIndex} * 100%))` }}
+              />
+              {categories.map(cat => (
+                <button 
+                  key={cat} 
+                  className={category === cat ? 'active' : ''} 
+                  onClick={() => setCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </nav>
+          </>
+        )}
       </header>
 
       <main className="wallpaper-grid">
-        {filtered.map((wp, i) => (
-          <div 
-            id={`wp-${wp.id}`}
-            key={wp.id} 
-            className={`wp-item ${highlightedId === wp.id ? 'highlight-pulse' : ''}`} 
-            onClick={() => setSelected(wp)} 
-            style={{ animationDelay: `${i * 0.03}s` }}
-          >
-            <div className="image-container">
-              <img src={wp.irl} alt={wp.name} loading="lazy" decoding="async" />
-              {wp.premium && <div className="premium-tag">💎</div>}
+        <div className="grid-header">
+           <h2>{activeTab} Collection</h2>
+           <p>{filtered.length} Wallpapers found</p>
+        </div>
+        <div className="grid-layout">
+            {filtered.map((wp) => (
+            <div key={wp.id} className="wp-item" onClick={() => setSelected(wp)}>
+                <div className="image-container glass">
+                <img src={wp.irl} alt={wp.name} loading="lazy" />
+                <button className={`fav-btn ${favorites.includes(wp.id) ? 'is-fav' : ''}`} onClick={(e) => toggleFavorite(e, wp.id)}>
+                    ❤️
+                </button>
+                {wp.premium && <div className="premium-tag">💎</div>}
+                </div>
+                <div className="wp-details">
+                <h4>{wp.name}</h4>
+                </div>
             </div>
-            <div className="wp-details">
-              <h4>{wp.name}</h4>
-              <p>OLED Optimized</p>
-            </div>
-          </div>
-        ))}
+            ))}
+        </div>
       </main>
 
-      {/* MODAL (Solo se abre si el usuario hace click manual) */}
-      {selected && (
-        <div className="modal-root">
-          <div className="overlay-blur" onClick={() => setSelected(null)} />
-          <div className="premium-banner">
-            <div className="drag-handle" onClick={() => setSelected(null)} />
-            <div className="banner-image">
-              <img src={selected.irl} alt="Preview" />
-            </div>
-            <div className="banner-info">
-              <h2>{selected.name}</h2>
-              <button className="download-cta" onClick={() => download(selected.irl, selected.name)}>
-                DOWNLOAD NOW
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* DOCK INTERACTIVO SIN CAMBIO DE PLANO */}
-      <footer className="floating-dock">
-        {[
-          { icon: '🏠', label: 'Home' },
-          { icon: '📋', label: 'Setup' },
-          { icon: '❤️', label: 'Favorite' },
-          { icon: '📱', label: 'Mockup' }
-        ].map((item) => (
+      {/* DOCK CON GOTA DE CRISTAL */}
+      <footer className="floating-dock glass">
+        <div 
+          className="dock-drop" 
+          style={{ transform: `translateX(calc(${activeDockIndex} * 100%))` }}
+        />
+        {dockItems.map((item) => (
           <div 
             key={item.label} 
             className={`dock-item ${activeTab === item.label ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab(item.label);
-              scrollToRandom(); // <--- Desplazamiento suave, no invasivo
-            }}
+            onClick={() => setActiveTab(item.label)}
           >
             <span className="icon">{item.icon}</span>
             <span className="label">{item.label}</span>
@@ -160,55 +169,76 @@ export default function IVibeProOptimized() {
       </footer>
 
       <style jsx global>{`
-        :root { --blue: #007AFF; --glass: rgba(255,255,255,0.08); --accent: #50E3C2; }
+        :root { 
+            --blue: #007AFF; 
+            --glass: rgba(255, 255, 255, 0.04); 
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --drop-bg: rgba(255, 255, 255, 0.12);
+        }
+        
         body { margin: 0; background: #000; font-family: 'Plus Jakarta Sans', sans-serif; color: white; overflow-x: hidden; }
 
-        .image-container { background: #111; position: relative; }
-        
-        /* EFECTO DE RESALTE AL SELECCIONAR ALEATORIO */
-        .highlight-pulse {
-          transform: scale(1.05);
-          z-index: 10;
-          transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .highlight-pulse .image-container {
-          outline: 3px solid var(--accent);
-          box-shadow: 0 0 30px var(--accent);
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(30px) saturate(160%);
+            -webkit-backdrop-filter: blur(30px) saturate(160%);
+            border: 1px solid var(--glass-border);
         }
 
-        .premium-header { padding: 40px 20px 10px; }
-        .top-nav { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
-        .search-bar-wrapper { flex: 1; position: relative; background: #111; border-radius: 20px; padding: 2px 15px; border: 1px solid #222; }
-        .search-bar-wrapper input { background: transparent; border: none; color: white; padding: 10px 0; width: 90%; outline: none; }
+        .premium-header { padding: 50px 20px 20px; }
+        .top-nav { display: flex; gap: 15px; align-items: center; padding: 12px 18px; border-radius: 25px; margin-bottom: 25px; }
 
-        .section-label { font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--blue); margin-bottom: 15px; }
-        .recommended-slider { display: flex; gap: 15px; overflow-x: auto; scrollbar-width: none; padding-bottom: 10px; }
-        .rec-card { min-width: 140px; height: 190px; border-radius: 25px; overflow: hidden; position: relative; flex-shrink: 0; }
-        .rec-card img { width: 100%; height: 100%; object-fit: cover; }
+        /* CATEGORY NAV CON GOTA */
+        .category-nav { 
+            display: flex; position: relative; border-radius: 20px; padding: 5px; margin-top: 20px; 
+            overflow: hidden;
+        }
+        .category-drop {
+            position: absolute; top: 5px; left: 5px;
+            width: calc((100% - 10px) / 4); height: calc(100% - 10px);
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            z-index: 0;
+            transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .category-nav button { 
+            flex: 1; border: none; background: transparent; color: rgba(255,255,255,0.4); 
+            padding: 12px; font-weight: 800; font-size: 12px; position: relative; z-index: 1;
+            transition: 0.3s;
+        }
+        .category-nav button.active { color: white; }
 
-        .category-nav { display: flex; background: #111; border-radius: 30px; padding: 4px; margin-top: 15px; }
-        .category-nav button { flex: 1; border: none; background: transparent; color: #555; padding: 10px; font-weight: 800; border-radius: 25px; }
-        .category-nav button.active { background: #222; color: white; }
-
-        .wallpaper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px 20px 140px; }
-        .wp-item { animation: fadeInUp 0.4s ease forwards; transition: 0.3s; }
-        .image-container { border-radius: 28px; overflow: hidden; height: 260px; border: 1px solid rgba(255,255,255,0.05); }
+        /* WALLPAPER GRID */
+        .wallpaper-grid { padding: 10px 20px 150px; }
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .image-container { border-radius: 32px; overflow: hidden; height: 280px; position: relative; }
         .image-container img { width: 100%; height: 100%; object-fit: cover; }
-        .wp-details h4 { margin: 8px 0 0; font-size: 13px; font-weight: 800; }
 
-        .modal-root { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: flex-end; }
-        .overlay-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); }
-        .premium-banner { width: 100%; background: #080808; border-radius: 40px 40px 0 0; position: relative; padding: 20px; border-top: 1px solid #222; }
-        .banner-image { width: 100%; height: 380px; border-radius: 30px; overflow: hidden; }
-        .banner-image img { width: 100%; height: 100%; object-fit: cover; }
-        .download-cta { width: 100%; padding: 20px; border-radius: 20px; border: none; background: var(--blue); color: white; font-weight: 900; margin-top: 20px; }
+        /* DOCK CON GOTA */
+        .floating-dock { 
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 380px; height: 75px; border-radius: 35px; 
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 1000; padding: 0 10px;
+        }
+        .dock-drop {
+            position: absolute; top: 10px; left: 10px;
+            width: calc((100% - 20px) / 4); height: 55px;
+            background: var(--drop-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            z-index: -1;
+            transition: transform 0.6s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .dock-item { width: 25%; display: flex; flex-direction: column; align-items: center; z-index: 2; transition: 0.3s; }
+        .dock-item.active { transform: translateY(-2px); }
+        .dock-item .label { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.4); margin-top: 4px; }
+        .dock-item.active .label { color: white; }
 
-        .floating-dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 85%; background: rgba(20,20,20,0.8); backdrop-filter: blur(30px); border-radius: 35px; padding: 12px; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.08); z-index: 100; }
-        .dock-item { display: flex; flex-direction: column; align-items: center; opacity: 0.4; transition: 0.3s; }
-        .dock-item.active { opacity: 1; transform: translateY(-3px); }
-
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .loader { height: 100vh; display: flex; align-items: center; justify-content: center; font-weight: 900; background: #000; color: var(--blue); }
+        .loader { height: 100vh; display: flex; align-items: center; justify-content: center; font-weight: 900; background: black; }
       `}</style>
     </div>
   );
