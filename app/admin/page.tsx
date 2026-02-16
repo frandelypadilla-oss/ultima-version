@@ -2,254 +2,182 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-export default function AdminPanel() {
-  // ESTADOS DE SUBIDA
+export default function AdminPanelFullFix() {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('General'); // Categoría por defecto al subir
+  const [category, setCategory] = useState('General');
   const [uploading, setUploading] = useState(false);
-
-  // ESTADOS DE GESTIÓN
   const [wallpapers, setWallpapers] = useState<any[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
   
-  // ESTADO DE SEGURIDAD
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  
   const ADMIN_PASSWORD = "admin14112001"; 
 
-  // LAS CATEGORÍAS DE TU APP
-  const categories = ['General', 'Trending', 'Anime', 'Setup', 'Minimal', 'Premium'];
+  const categories = ['General', 'Trending', 'Anime', 'Minimal', 'Premium', 'Setup', 'Mockup'];
 
-  // 1. CARGAR DATOS AL INICIAR
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchWallpapers();
-    }
+    if (isAuthenticated) fetchWallpapers();
   }, [isAuthenticated]);
 
   const fetchWallpapers = async () => {
-    setLoadingData(true);
-    const { data, error } = await supabase
-      .from('wallpapers')
-      .select('*')
-      .order('id', { ascending: false }); // Los más nuevos primero
-    
-    if (data) setWallpapers(data);
-    setLoadingData(false);
-  };
-
-  // 2. LOGIN
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-    } else {
-      alert("Acceso Denegado ❌");
+    setLoadingList(true);
+    try {
+      const { data, error } = await supabase.from('wallpapers').select('*');
+      if (error) throw error;
+      setWallpapers(data || []);
+    } catch (err: any) {
+      alert("Error al cargar biblioteca: " + err.message);
+    } finally {
+      setLoadingList(false);
     }
   };
 
-  // 3. SUBIR WALLPAPER (Ahora con categoría)
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) setIsAuthenticated(true);
+    else alert("Contraseña incorrecta");
+  };
+
+  // CAMBIAR CATEGORÍA (ARREGLADO)
+  const updateCategory = async (id: number, newCat: string) => {
+    try {
+      const { error } = await supabase
+        .from('wallpapers')
+        .update({ category: newCat })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      // Actualización visual instantánea
+      setWallpapers(prev => prev.map(wp => wp.id === id ? { ...wp, category: newCat } : wp));
+    } catch (err: any) {
+      alert("No se pudo cambiar la categoría: " + err.message);
+    }
+  };
+
+  // SUBIR NUEVO (ARREGLADO PARA USAR 'URL')
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !name) return alert('Faltan datos');
+    if (!file || !name) return alert('Ponle un nombre y elige una imagen');
     setUploading(true);
 
     try {
-      const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`; // Limpia nombre
-      
-      // A) Subir archivo
+      const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
       const { error: upErr } = await supabase.storage.from('imagenes').upload(fileName, file);
       if (upErr) throw upErr;
 
-      // B) Obtener URL pública
-      const { data: urlData } = supabase.storage.from('imagenes').getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('imagenes').getPublicUrl(fileName);
 
-      // C) Guardar en base de datos con la categoría seleccionada
-      const { error: dbErr } = await supabase
-        .from('wallpapers')
-        .insert([{ 
-          name: name, 
-          irl: urlData.publicUrl, 
-          category: category,
-          premium: category === 'Premium' // Auto-detectar si es premium
-        }]);
+      const { error: dbErr } = await supabase.from('wallpapers').insert([{ 
+        name: name, 
+        url: publicUrl, // Aquí usamos 'url' como en tu tabla
+        category: category 
+      }]);
 
       if (dbErr) throw dbErr;
 
-      alert('¡Subido con éxito! 🚀');
-      setName('');
-      setFile(null);
-      fetchWallpapers(); // Refrescar la lista de abajo
+      alert("¡Subido con éxito! 🚀");
+      setName(''); setFile(null);
+      fetchWallpapers();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      alert("Error al subir: " + err.message);
     } finally {
       setUploading(false);
     }
   };
 
-  // 4. MOVER DE CARPETA (Actualizar Categoría)
-  const handleMoveCategory = async (id: number, newCategory: string) => {
-    try {
-      const { error } = await supabase
-        .from('wallpapers')
-        .update({ 
-          category: newCategory,
-          premium: newCategory === 'Premium' // Si lo mueves a Premium, se marca como premium
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      // Actualizar la lista localmente para que se vea rápido
-      setWallpapers(prev => prev.map(wp => 
-        wp.id === id ? { ...wp, category: newCategory, premium: newCategory === 'Premium' } : wp
-      ));
-
-    } catch (err: any) {
-      alert('Error al mover: ' + err.message);
-    }
+  const deleteWp = async (id: number) => {
+    if (!confirm("¿Borrar permanentemente?")) return;
+    const { error } = await supabase.from('wallpapers').delete().eq('id', id);
+    if (!error) fetchWallpapers();
   };
 
-  // 5. BORRAR WALLPAPER
-  const handleDelete = async (id: number, url: string) => {
-    if(!confirm("¿Seguro que quieres eliminar este wallpaper?")) return;
-
-    try {
-        // Extraer nombre del archivo de la URL para borrar del storage (opcional, pero recomendado)
-        // const fileName = url.split('/').pop();
-        // await supabase.storage.from('imagenes').remove([fileName]);
-
-        const { error } = await supabase.from('wallpapers').delete().eq('id', id);
-        if(error) throw error;
-        
-        setWallpapers(prev => prev.filter(wp => wp.id !== id));
-    } catch (err: any) {
-        alert('Error al borrar: ' + err.message);
-    }
-  }
-
-  // PANTALLA DE LOGIN
   if (!isAuthenticated) {
     return (
-      <div style={styles.loginContainer}>
-        <div style={styles.loginBox}>
-          <h2 style={{ color: '#fff', marginBottom: '20px' }}>iVibe Admin</h2>
-          <form onSubmit={handleLogin}>
-            <input 
-              type="password" placeholder="Password" 
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-            />
-            <button type="submit" style={styles.buttonMain}>ACCEDER</button>
-          </form>
-        </div>
+      <div className="auth-screen">
+        <form onSubmit={handleLogin} className="auth-card glass">
+          <h1>iVibe Admin</h1>
+          <input type="password" placeholder="PIN" value={password} onChange={e => setPassword(e.target.value)} />
+          <button type="submit">ENTRAR</button>
+        </form>
+        <style jsx>{`
+          .auth-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; color: #fff; font-family: sans-serif; }
+          .glass { background: rgba(255,255,255,0.05); padding: 40px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); text-align: center; }
+          input { width: 100%; padding: 12px; margin: 20px 0; background: #111; border: 1px solid #333; color: #fff; border-radius: 10px; text-align: center; }
+          button { width: 100%; padding: 12px; background: #007AFF; border: none; color: #fff; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        `}</style>
       </div>
     );
   }
 
-  // PANEL PRINCIPAL
   return (
-    <div style={styles.adminContainer}>
-      <div style={styles.contentWrapper}>
-        
-        {/* CABECERA */}
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30}}>
-            <h2 style={{ fontSize: '24px', margin: 0 }}>🚀 Panel de Control</h2>
-            <button onClick={() => setIsAuthenticated(false)} style={styles.buttonDanger}>Salir</button>
-        </div>
+    <div className="admin-wrapper">
+      <div className="admin-content">
+        <header className="admin-header">
+          <h2>Control Center</h2>
+          <button onClick={() => setIsAuthenticated(false)} className="exit-btn">Cerrar Sesión</button>
+        </header>
 
-        {/* SECCIÓN 1: SUBIR NUEVO */}
-        <div style={styles.card}>
-            <h3 style={styles.cardTitle}>Subir Nuevo Wallpaper</h3>
-            <form onSubmit={handleUpload} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <input 
-                    type="text" placeholder="Nombre" 
-                    value={name} onChange={(e) => setName(e.target.value)} 
-                    style={{...styles.input, flex: 1}} 
-                />
-                
-                <select 
-                    value={category} onChange={(e) => setCategory(e.target.value)}
-                    style={{...styles.input, width: '120px'}}
-                >
-                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
+        <section className="form-card glass">
+          <h3>Subir Nuevo Wallpaper</h3>
+          <form onSubmit={handleUpload} className="upload-grid">
+            <input type="text" placeholder="Nombre" value={name} onChange={e => setName(e.target.value)} />
+            <select value={category} onChange={e => setCategory(e.target.value)}>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input type="file" onChange={e => setFile(e.target.files ? e.target.files[0] : null)} />
+            <button type="submit" disabled={uploading}>{uploading ? '...' : 'PUBLICAR'}</button>
+          </form>
+        </section>
 
-                <input 
-                    type="file" 
-                    onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-                    style={{...styles.input, padding: '12px'}} 
-                />
-                
-                <button type="submit" disabled={uploading} style={styles.buttonAction}>
-                    {uploading ? '⏳' : 'SUBIR'}
-                </button>
-            </form>
-        </div>
-
-        {/* SECCIÓN 2: GESTIONAR EXISTENTES */}
-        <div style={{ marginTop: '40px' }}>
-            <h3 style={styles.cardTitle}>Gestionar Galería ({wallpapers.length})</h3>
-            
-            {loadingData ? <p>Cargando...</p> : (
-                <div style={styles.grid}>
-                    {wallpapers.map((wp) => (
-                        <div key={wp.id} style={styles.itemCard}>
-                            <div style={styles.imgWrapper}>
-                                <img src={wp.irl} alt={wp.name} style={styles.img} />
-                                <span style={styles.badge}>{wp.category}</span>
-                            </div>
-                            
-                            <div style={{ padding: '10px' }}>
-                                <p style={{ margin: '0 0 10px', fontWeight: 'bold', fontSize: '14px' }}>{wp.name}</p>
-                                
-                                <div style={{ display: 'flex', gap: '5px' }}>
-                                    {/* SELECTOR MÁGICO PARA MOVER DE CARPETA */}
-                                    <select 
-                                        value={wp.category} 
-                                        onChange={(e) => handleMoveCategory(wp.id, e.target.value)}
-                                        style={styles.miniSelect}
-                                    >
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-
-                                    <button onClick={() => handleDelete(wp.id, wp.irl)} style={styles.miniDelete}>
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+        <section className="library-section">
+          <h3>Biblioteca ({wallpapers.length} registros)</h3>
+          <div className="admin-grid">
+            {loadingList ? (
+              <p>Conectando con Supabase...</p>
+            ) : (
+              wallpapers.map(wp => (
+                <div key={wp.id} className="wp-card glass">
+                  <img src={wp.url} alt="" />
+                  <div className="wp-actions">
+                    <p>{wp.name}</p>
+                    <select value={wp.category} onChange={(e) => updateCategory(wp.id, e.target.value)}>
+                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <button onClick={() => deleteWp(wp.id)} className="delete-btn">Eliminar</button>
+                  </div>
                 </div>
+              ))
             )}
-        </div>
-
+          </div>
+        </section>
       </div>
+
+      <style jsx>{`
+        .admin-wrapper { background: #000; min-height: 100vh; color: #fff; padding: 40px 20px; font-family: system-ui; }
+        .admin-content { max-width: 1100px; margin: 0 auto; }
+        .glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; }
+        
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .exit-btn { background: none; border: 1px solid #333; color: #666; padding: 8px 15px; border-radius: 10px; cursor: pointer; }
+
+        .form-card { padding: 30px; margin-bottom: 50px; }
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; }
+        
+        input, select { background: #111; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 12px; }
+        
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        .wp-card { overflow: hidden; display: flex; flex-direction: column; }
+        .wp-card img { width: 100%; height: 280px; object-fit: cover; background: #111; }
+        
+        .wp-actions { padding: 15px; }
+        .wp-actions p { margin: 0 0 10px; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wp-actions select { width: 100%; padding: 8px; font-size: 12px; background: #1a1a1a; margin-bottom: 10px; }
+        
+        .delete-btn { width: 100%; background: transparent; border: 1px solid #ff3b30; color: #ff3b30; padding: 8px; border-radius: 10px; font-size: 11px; cursor: pointer; }
+        .delete-btn:hover { background: #ff3b30; color: #fff; }
+      `}</style>
     </div>
   );
 }
-
-// ESTILOS EN JS PARA NO COMPLICAR EL CSS
-const styles: any = {
-  loginContainer: { background: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' },
-  loginBox: { padding: '40px', background: '#111', borderRadius: '20px', border: '1px solid #333', textAlign: 'center' },
-  adminContainer: { background: '#000', minHeight: '100vh', color: '#fff', fontFamily: 'sans-serif', padding: '20px' },
-  contentWrapper: { maxWidth: '800px', margin: '0 auto' },
-  card: { background: '#111', padding: '20px', borderRadius: '15px', border: '1px solid #222' },
-  cardTitle: { marginTop: 0, color: '#007AFF', fontSize: '16px', textTransform: 'uppercase' },
-  input: { background: '#222', border: '1px solid #333', color: '#fff', padding: '15px', borderRadius: '10px', outline: 'none' },
-  buttonMain: { width: '100%', marginTop: '15px', padding: '12px', borderRadius: '10px', background: '#007AFF', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer' },
-  buttonAction: { padding: '15px 30px', background: '#fff', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' },
-  buttonDanger: { background: 'transparent', border: '1px solid #ff3b30', color: '#ff3b30', padding: '5px 15px', borderRadius: '20px', cursor: 'pointer' },
-  
-  // Grid de gestión
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' },
-  itemCard: { background: '#161616', borderRadius: '12px', overflow: 'hidden', border: '1px solid #333' },
-  imgWrapper: { height: '120px', overflow: 'hidden', position: 'relative' },
-  img: { width: '100%', height: '100%', objectFit: 'cover' },
-  badge: { position: 'absolute', top: 5, right: 5, background: 'rgba(0,0,0,0.7)', fontSize: '10px', padding: '3px 8px', borderRadius: '10px' },
-  miniSelect: { flex: 1, background: '#333', color: '#fff', border: 'none', padding: '5px', borderRadius: '5px', fontSize: '11px', cursor: 'pointer' },
-  miniDelete: { background: '#330000', border: 'none', borderRadius: '5px', cursor: 'pointer', padding: '5px' }
-};
