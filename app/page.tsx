@@ -5,6 +5,8 @@ import { supabase } from './lib/supabase';
 export default function IVibeProLiquid() {
   const [wallpapers, setWallpapers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(0); // Para control de carga
+  const [showAll, setShowAll] = useState(false);      // Para efecto de golpe
   const [category, setCategory] = useState('Trending');
   const [activeTab, setActiveTab] = useState('Home');
   const [selected, setSelected] = useState<any | null>(null);
@@ -19,13 +21,23 @@ export default function IVibeProLiquid() {
 
   useEffect(() => {
     const fetchWps = async () => {
-      // Nota: Usamos 'irl' porque confirmamos que así se llama tu columna
       const { data } = await supabase.from('wallpapers').select('*');
       if (data) setWallpapers(data);
       setLoading(false);
     };
     fetchWps();
   }, []);
+
+  // Lógica para mostrar todo de golpe al cargar las primeras 6 imágenes
+  const handleImageLoad = () => {
+    setImagesLoaded(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    if (wallpapers.length > 0 && imagesLoaded >= Math.min(wallpapers.length, 6)) {
+      setTimeout(() => setShowAll(true), 300);
+    }
+  }, [imagesLoaded, wallpapers]);
 
   const handleDownload = async (url: string, name: string) => {
     try {
@@ -57,7 +69,6 @@ export default function IVibeProLiquid() {
 
   return (
     <div className="main-viewport">
-      {/* Fondo con movimiento tipo Mesh Gradient */}
       <div className="mesh-bg"></div>
 
       <header className="ios-header">
@@ -91,11 +102,17 @@ export default function IVibeProLiquid() {
       </header>
 
       <main className="content-scroll">
-        <div className="grid-layout">
+        {/* Clase condicional 'reveal' para el efecto de golpe */}
+        <div className={`grid-layout ${showAll ? 'reveal' : 'initial'}`}>
           {filtered.map((wp) => (
             <div key={wp.id} className="wp-card" onClick={() => setSelected(wp)}>
               <div className="wp-wrapper glass-border">
-                <img src={wp.irl} alt={wp.name} loading="lazy" />
+                <img 
+                  src={wp.irl} 
+                  alt={wp.name} 
+                  onLoad={handleImageLoad} 
+                  style={{ opacity: showAll ? 1 : 0 }} 
+                />
                 {wp.premium && <div className="tag-premium">􀝊 PREMIUM</div>}
                 <div className="wp-overlay">
                   <span>{wp.name}</span>
@@ -106,15 +123,20 @@ export default function IVibeProLiquid() {
         </div>
       </main>
 
-      {/* DETALLE (MODAL) TIPO IOS SHEET */}
+      {/* DETALLE (MODAL) CORREGIDO PARA RETROCEDER SIEMPRE */}
       {selected && (
         <div className="modal-root">
+          {/* El overlay ahora tiene onClick para cerrar al tocar fuera */}
           <div className="overlay-blur" onClick={() => setSelected(null)} />
+          
           <div className="sheet glass">
-            <div className="drag-handle" />
+            {/* El handle ahora también cierra al tocarlo */}
+            <div className="drag-handle" onClick={() => setSelected(null)} />
+            
             <div className="preview-hero">
               <img src={selected.irl} alt="Preview" />
-              <button className="close-x" onClick={() => setSelected(null)}>✕</button>
+              {/* Botón X con stopPropagation para asegurar el cierre */}
+              <button className="close-x" onClick={(e) => { e.stopPropagation(); setSelected(null); }}>✕</button>
             </div>
             <div className="sheet-content">
               <h2>{selected.name}</h2>
@@ -122,12 +144,13 @@ export default function IVibeProLiquid() {
               <button className="btn-apple" onClick={() => handleDownload(selected.irl, selected.name)}>
                 Get Wallpaper
               </button>
+              {/* Botón extra opcional para cerrar cómodamente */}
+              <button className="btn-cancel" onClick={() => setSelected(null)}>Not now</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* DOCK LIQUIDO */}
       <footer className="dock-container">
         <div className="dock glass">
           <div 
@@ -150,40 +173,12 @@ export default function IVibeProLiquid() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
 
-        :root { 
-          --blue: #0A84FF; 
-          --glass: rgba(20, 20, 20, 0.7);
-          --border: rgba(255, 255, 255, 0.15);
-          --radius: 32px;
-        }
+        :root { --blue: #0A84FF; --glass: rgba(20, 20, 20, 0.7); --border: rgba(255, 255, 255, 0.15); }
+        body { margin: 0; background: #000; font-family: -apple-system, sans-serif; color: white; overflow: hidden; }
 
-        body { 
-          margin: 0; 
-          background: #000; 
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          color: white; 
-          overflow: hidden; 
-        }
+        .mesh-bg { position: fixed; inset: -50%; z-index: -1; background: radial-gradient(circle at 70% 30%, #1a1a2e 0%, #000 50%), radial-gradient(circle at 20% 70%, #0a1128 0%, #000 50%); opacity: 0.6; }
+        .glass { background: var(--glass); backdrop-filter: blur(35px) saturate(180%); -webkit-backdrop-filter: blur(35px) saturate(180%); border: 0.5px solid var(--border); }
 
-        /* MESH BACKGROUND */
-        .mesh-bg {
-          position: fixed;
-          top: -50%; left: -50%; width: 200%; height: 200%;
-          z-index: -1;
-          background: radial-gradient(circle at 70% 30%, #1a1a2e 0%, #000 50%),
-                      radial-gradient(circle at 20% 70%, #0a1128 0%, #000 50%);
-          opacity: 0.6;
-        }
-
-        /* GLASS EFFECT */
-        .glass { 
-          background: var(--glass); 
-          backdrop-filter: blur(35px) saturate(180%);
-          -webkit-backdrop-filter: blur(35px) saturate(180%);
-          border: 0.5px solid var(--border);
-        }
-
-        /* HEADER */
         .ios-header { padding: 50px 20px 15px; position: sticky; top: 0; z-index: 1000; background: rgba(0,0,0,0.4); }
         .status-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
         .brand-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -1px; }
@@ -191,42 +186,48 @@ export default function IVibeProLiquid() {
         .avatar-ring { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0A84FF, #5AC8FA); padding: 2px; }
         .avatar-inner { width: 100%; height: 100%; background: #000; border-radius: 50%; }
 
-        /* LIQUID NAV */
         .liquid-nav { display: flex; position: relative; border-radius: 18px; padding: 4px; gap: 4px; }
         .nav-indicator { position: absolute; top: 4px; left: 4px; width: calc((100% - 20px) / 4); height: calc(100% - 8px); background: rgba(255,255,255,0.15); border-radius: 14px; transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); }
         .liquid-nav button { flex: 1; border: none; background: transparent; color: #888; padding: 12px; font-weight: 600; font-size: 13px; z-index: 1; transition: 0.3s; }
         .liquid-nav button.active { color: white; }
 
-        /* CONTENT */
-        .content-scroll { height: 100vh; overflow-y: scroll; padding: 0 16px 200px; scroll-behavior: smooth; }
-        .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .content-scroll { height: 100vh; overflow-y: scroll; padding: 0 16px 250px; scroll-behavior: smooth; }
+        
+        /* ESTILOS PARA REVELACIÓN DE GOLPE */
+        .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); }
+        .grid-layout.initial { opacity: 0; transform: translateY(40px); }
+        .grid-layout.reveal { opacity: 1; transform: translateY(0); }
+
         .wp-wrapper { border-radius: 28px; aspect-ratio: 9/16; overflow: hidden; position: relative; border: 0.5px solid rgba(255,255,255,0.1); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .wp-card:active .wp-wrapper { transform: scale(0.92) rotate(1deg); }
-        .wp-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .wp-card:active .wp-wrapper { transform: scale(0.92); }
+        .wp-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.6s ease; }
         .wp-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 15px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
         .wp-overlay span { font-size: 12px; font-weight: 500; opacity: 0.8; }
         .tag-premium { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; font-size: 9px; font-weight: 800; color: #FFD700; backdrop-filter: blur(5px); }
 
-        /* DOCK LIQUID */
+        /* MODAL Y RETROCESO */
+        .modal-root { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: flex-end; }
+        .overlay-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+        .sheet { width: 100%; height: 88vh; border-radius: 40px 40px 0 0; position: relative; display: flex; flex-direction: column; animation: sheetUp 0.5s cubic-bezier(0.19, 1, 0.22, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
+        .drag-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 12px auto; cursor: pointer; }
+        .preview-hero { flex: 1; margin: 0 15px; border-radius: 30px; overflow: hidden; position: relative; }
+        .preview-hero img { width: 100%; height: 100%; object-fit: cover; }
+        .close-x { position: absolute; top: 15px; right: 15px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        
+        .sheet-content { padding: 30px; text-align: center; }
+        .btn-apple { width: 100%; padding: 18px; border-radius: 20px; background: white; color: black; border: none; font-size: 17px; font-weight: 700; }
+        .btn-cancel { background: none; border: none; color: #555; margin-top: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+
         .dock-container { position: fixed; bottom: 34px; left: 0; right: 0; display: flex; justify-content: center; z-index: 2000; }
         .dock { width: 90%; max-width: 360px; height: 72px; border-radius: 35px; display: flex; padding: 6px; position: relative; }
         .dock-selector { position: absolute; top: 6px; left: 6px; width: calc((100% - 12px) / 4); height: calc(100% - 12px); background: rgba(255,255,255,0.1); border-radius: 29px; transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); }
-        .dock-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0.5; transition: 0.4s; }
+        .dock-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0.5; }
         .dock-item.active { opacity: 1; transform: translateY(-4px); }
         .dock-icon { font-size: 20px; }
         .dock-label { font-size: 10px; font-weight: 700; margin-top: 4px; }
 
-        /* MODAL SHEET */
-        .sheet { position: fixed; bottom: 0; left: 0; right: 0; height: 85vh; border-radius: 40px 40px 0 0; z-index: 3000; display: flex; flex-direction: column; animation: sheetUp 0.5s cubic-bezier(0.19, 1, 0.22, 1); }
-        .drag-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 12px auto; }
-        .preview-hero { flex: 1; margin: 0 15px; border-radius: 30px; overflow: hidden; position: relative; }
-        .preview-hero img { width: 100%; height: 100%; object-fit: cover; }
-        .sheet-content { padding: 30px; text-align: center; }
-        .btn-apple { width: 100%; padding: 20px; border-radius: 22px; background: white; color: black; border: none; font-size: 17px; font-weight: 700; transition: 0.3s; }
-        .btn-apple:active { transform: scale(0.96); background: rgba(255,255,255,0.9); }
-
         @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .loader { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+        .loader { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #000; }
         .ios-spinner { width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
