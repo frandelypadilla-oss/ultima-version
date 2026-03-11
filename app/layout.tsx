@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { WallpaperProvider } from './context/WallpaperContext';
 
 // Metadatos para que el móvil reconozca la App y el Manifest
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WallpaperProvider>
           {children}
         </WallpaperProvider>
+        <Analytics />
       </body>
     </html>
   );
